@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html style="overflow: visible; position: unset;"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<title>Lab 2, Exercise 1</title>
+<style>
+    body {
+        background-color: #DDDDDD;
+    }
+    canvas {
+        background-color: white;
+        display: block;
+    }
+    #canvasholder {
+        border:2px solid black;
+        float: left;
+    }
+</style>
+<script>
+
+    "use strict";  
+
+    var canvas;   
+    var graphics;  
+    var pixelSize; 
+
+    function draw() {
+
+//gwiazda
+graphics.beginPath();
+graphics.fillStyle = "#FFFF00"; 
+graphics.strokeStyle = "#000000"; 
+graphics.lineWidth = 3;
+
+
+graphics.moveTo(300, 50); 
+graphics.lineTo(360, 200);
+graphics.lineTo(520, 220);
+graphics.lineTo(400, 320);
+graphics.lineTo(430, 480);
+graphics.lineTo(300, 400);
+graphics.lineTo(170, 480);
+graphics.lineTo(200, 320);
+graphics.lineTo(80, 220);
+graphics.lineTo(240, 200);
+graphics.closePath();
+
+graphics.fill();
+graphics.stroke();
+graphics.closePath();
+
+
+
+
+//usta
+graphics.beginPath();
+graphics.fillStyle = "#000000";
+graphics.strokeStyle ="#000000";
+graphics.fillOval(300, 279, 100, 70);
+
+//zeby
+graphics.fillStyle = "#FFFFFF";
+graphics.fillPoly(299, 295 + 7, 299, 329, 275, 329, 275, 299);
+graphics.fillPoly(302, 299, 302, 329, 325, 329, 325, 299);
+graphics.fillStyle = "#FFFF00";
+
+graphics.fillOval(300, 270 + 7, 100, 30);
+graphics.fillOval(300, 252 + 7, 120, 50);
+
+//policzek L
+graphics.fillStyle = "#000000";
+graphics.fillOval(206, 292, 20, 20); 
+graphics.fillStyle = "#FFFF00";   
+graphics.fillOval(200, 285, 20, 25);     
+
+//policzek P
+graphics.fillStyle = "#000000";
+graphics.fillOval(400, 292, 20, 20); 
+graphics.fillStyle = "#FFFF00";   
+graphics.fillOval(406, 285, 20, 25);    
+
+graphics.closePath();  
+
+ //oczy
+ graphics.beginPath();
+graphics.fillStyle = "#FFFFFF"; 
+graphics.fillCircle(220, 230, 25);
+graphics.fillCircle(380, 230, 25);
+graphics.fill();  
+
+graphics.fillStyle = "#000000";
+graphics.fillCircle(218, 230, 15);
+graphics.fillCircle(378, 230, 15);
+graphics.fill();  
+
+graphics.fillStyle = "#FFFFFF";
+graphics.fillCircle(211, 230, 5);
+graphics.fillCircle(371, 230, 5);
+graphics.fill();  
+graphics.closePath();
+        
+        
+    } 
+    
+
+    function applyWindowToViewportTransformation(left,right,bottom,top,preserveAspect) {
+        var displayAspect, windowAspect;
+        var excess;
+        var pixelwidth, pixelheight;
+        if (preserveAspect) {
+            // Adjust the limits to match the aspect ratio of the drawing area.
+            displayAspect = Math.abs(canvas.height / canvas.width);
+            windowAspect = Math.abs(( top-bottom ) / ( right-left ));
+            if (displayAspect > windowAspect) {
+                // Expand the viewport vertically.
+                excess = (top-bottom) * (displayAspect/windowAspect - 1);
+                top = top + excess/2;
+                bottom = bottom - excess/2;
+            }
+            else if (displayAspect < windowAspect) {
+                // Expand the viewport vertically.
+                excess = (right-left) * (windowAspect/displayAspect - 1);
+                right = right + excess/2;
+                left = left - excess/2;
+            }
+        }
+        graphics.scale( canvas.width / (right-left), canvas.height / (bottom-top) );
+        graphics.translate( -left, -top );
+        pixelwidth =  Math.abs(( right - left ) / canvas.width);
+        pixelheight = Math.abs(( bottom - top ) / canvas.height);
+        pixelSize = Math.max(pixelwidth,pixelheight);
+    } 
+
+    function addGraphicsContextExtras(graphics) {
+        graphics.strokeLine = function(x1,y1,x2,y2) {
+           this.beginPath();
+           this.moveTo(x1,y1);
+           this.lineTo(x2,y2);
+           this.stroke();
+        }
+        graphics.fillCircle = function(x,y,r) {
+           this.beginPath();
+           this.arc(x,y,r,0,2*Math.PI,false);
+           this.fill();
+        }
+        graphics.strokeCircle = function(x,y,radius) {
+           this.beginPath();
+           this.arc(x,y,radius,0,2*Math.PI,false);
+           this.stroke();
+        }
+        graphics.fillPoly = function() { 
+            if (arguments.length < 6)
+               return;
+            this.beginPath();
+            this.moveTo(arguments[0],arguments[1]);
+            for (var i = 2; i+1 < arguments.length; i = i + 2) { 
+               this.lineTo(arguments[i],arguments[i+1]);
+            }
+            this.closePath();
+            this.fill();
+        }
+        graphics.strokePoly = function() { 
+            if (arguments.length < 4)
+               return;
+            this.beginPath();
+            this.moveTo(arguments[0],arguments[1]);
+            for (var i = 2; i+1 < arguments.length; i = i + 2) { 
+               this.lineTo(arguments[i],arguments[i+1]);
+            }
+            this.closePath();
+            this.stroke();
+        }
+        graphics.fillOval = function(x,y,horizontalRadius,verticalRadius) {
+           this.save();
+           this.translate(x,y);
+           this.scale(horizontalRadius,verticalRadius);
+           this.beginPath();
+           this.arc(0,0,1,0,2*Math.PI,false);
+           this.restore();
+           this.fill();
+        }
+        graphics.strokeOval = function(x,y,horizontalRadius,verticalRadius) {
+           this.save();
+           this.translate(x,y);
+           this.scale(horizontalRadius,verticalRadius);
+           this.beginPath();
+           this.arc(0,0,1,0,2*Math.PI,false);
+           this.restore();
+           this.stroke();
+        }
+        graphics.getRGB = function(x,y) {
+            var color = this.getImageData(x,y,1,1);
+            return color.data;
+        }
+    }    
+    
+
+    function init() {
+        try {
+            canvas = document.getElementById("canvas");
+            graphics = canvas.getContext("2d");
+        } catch(e) {
+            document.getElementById("canvasholder").innerHTML =
+               "Canvas graphics is not supported.<br>" +
+               "An error occurred while initializing graphics.";
+        }
+        addGraphicsContextExtras(graphics);
+        draw();  // Call draw() to draw on the canvas.
+    }
+    
+</script>
+</head>
+<body onload="init()" data-new-gr-c-s-check-loaded="14.1100.0" data-gr-ext-installed=""> 
+<h2>Lab 2, Exercise 1</h2>
+
+<noscript>
+
+<p>JavaScript is required to use this page.</p>
+</noscript>
+
+<div id="canvasholder">
+<canvas id="canvas" width="600" height="600">
+
+Canvas not supported.
+</canvas>
+</div>
+
+
+
+</body>
+</html>
