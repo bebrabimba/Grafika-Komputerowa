@@ -4,7 +4,7 @@ import math
 pygame.init()
 
 # Ustawienia okna
-WIDTH, HEIGHT = 650, 650
+WIDTH, HEIGHT = 600, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("2D Transforms in Pygame")
 
@@ -80,7 +80,7 @@ for i in range(1, n_sides + 1):
 
 # Definicja 
 buttons = []
-button_width = 60
+button_width = 50
 button_height = 30
 margin = 5
 start_x = margin
