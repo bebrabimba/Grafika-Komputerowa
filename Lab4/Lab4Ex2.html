@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Scene Graph 2D</title>
+
+<script>
+
+    var canvas;   // The canvas that is used as the drawing surface
+    var graphics; // The 2D graphics context for drawing on the canvas.
+
+    var X_LEFT = -4;    // The xy limits for the coordinate system.
+    var X_RIGHT = 4;
+    var Y_BOTTOM = -3;
+    var Y_TOP = 3;
+    
+    var BACKGROUND = "white";  // The display is filled with this color before the scene is drawn.
+         
+    var pixelSize;  // The size of one pixel, in the transformed coordinates.
+            
+    var frameNumber = 0;  // Current frame number. goes up by one in each frame.
+
+    var world;  // A SceneGraphNode representing the entire scene. 
+    
+    var blueLeft;
+    var blueRight;
+    var blueSwing;
+    var blueBaseTriangle;
+    
+    var violetLeft;
+    var violetRight;
+    var violetSwing;
+    var violetBaseTriangle;
+	
+    var greenLeft;
+    var greenRight;
+    var greenSwing;
+    var greenBaseTriangle;
+
+    function createWorld() {
+
+        world = new CompoundObject();  // Root node for the scene graph.
+
+        violetLeft = new TransformedObject(shape);
+        violetLeft.setTranslation(-3.15, 1.7).setColor("black").setScale(0.4,0.4);
+        world.add(violetLeft);
+        violetRight = new TransformedObject(shape);
+        violetRight.setTranslation(-0.85, 1.3).setColor("black").setScale(0.4,0.4);
+        world.add(violetRight);
+        violetSwing = new TransformedObject(filledRect);
+        violetSwing.setTranslation(-2, 1.5).setColor("red").setScale(2.4,0.15).setRotation(-10);
+        world.add(violetSwing);
+        violetBaseTriangle = new TransformedObject(filledTriangle);
+        violetBaseTriangle.setTranslation(-2.0, -0.1).setColor("purple").setScale(0.4,1.6);
+        world.add(violetBaseTriangle);
+
+        blueLeft = new TransformedObject(shape);
+        blueLeft.setTranslation(-1.45, -0.75).setColor("black").setScale(0.5,0.5);
+        world.add(blueLeft);
+        blueRight = new TransformedObject(shape);
+        blueRight.setTranslation(1.45, -1.25).setColor("black").setScale(0.5,0.5);
+        world.add(blueRight);
+        blueSwing = new TransformedObject(filledRect);
+        blueSwing.setTranslation(0, -1).setColor("red").setScale(3,0.2).setRotation(-10);
+        world.add(blueSwing);
+        blueBaseTriangle = new TransformedObject(filledTriangle);
+        blueBaseTriangle.setTranslation(0, -3).setColor("blue").setScale(0.5,2.0);
+        world.add(blueBaseTriangle);
+
+        greenLeft = new TransformedObject(shape);
+        greenLeft.setTranslation(1.3, 2.12).setColor("black").setScale(0.25,0.25);
+        world.add(greenLeft);
+        greenRight = new TransformedObject(shape);
+        greenRight.setTranslation(2.7, 1.88).setColor("black").setScale(0.25,0.25);
+        world.add(greenRight);
+        greenSwing = new TransformedObject(filledRect);
+        greenSwing.setTranslation(2, 2).setColor("red").setScale(1.5,0.1).setRotation(-10);
+        world.add(greenSwing);
+        greenBaseTriangle = new TransformedObject(filledTriangle);
+        greenBaseTriangle.setTranslation(2, 1).setColor("green").setScale(0.25,1);
+        world.add(greenBaseTriangle);
+    }
+    
+    // Modyfikacja: zmiana rysowania siedmiokątów na czternastokąty 
+    // oraz dodanie linii od środka do wierzchołków.
+    var shape = new SceneGraphNode();
+    shape.doDraw = function(g) {
+        var vertices = 14;  // Zmieniono z 7 na 14
+        // Rysowanie obwodu wielokąta.
+        g.beginPath();
+        for (var i = 0; i < vertices; i++) {
+            var angle = i * 2 * Math.PI / vertices;
+            var x = Math.cos(angle);
+            var y = Math.sin(angle);
+            if (i === 0)
+                g.moveTo(x, y);
+            else
+                g.lineTo(x, y);
+        }
+        g.closePath();
+        g.stroke();
+        
+        // Rysowanie linii od środka do każdego wierzchołka.
+        for (var i = 0; i < vertices; i++) {
+            var angle = i * 2 * Math.PI / vertices;
+            var x = Math.cos(angle);
+            var y = Math.sin(angle);
+            g.beginPath();
+            g.moveTo(0, 0);
+            g.lineTo(x, y);
+            g.stroke();
+        }
+    }
+
+    function updateFrame() {
+        frameNumber++;
+
+        blueLeft.setRotation(-frameNumber * 0.8);
+        blueRight.setRotation(frameNumber * 0.8);
+        violetLeft.setRotation(-frameNumber * 0.8);
+        violetRight.setRotation(frameNumber * 0.8);
+        greenLeft.setRotation(-frameNumber * 0.8);
+        greenRight.setRotation(frameNumber * 0.8);
+    }
+ 
+
+    //------------------- A Simple Scene Object-Oriented Scene Graph API ----------------
+    
+    /**
+     * The (abstract) base class for all nodes in the scene graph data structure.
+     */
+    function SceneGraphNode() {
+        this.fillColor = null;   // If non-null, the default fillStyle for this node.
+        this.strokeColor = null; // If non-null, the default strokeStyle for this node.
+    }
+    SceneGraphNode.prototype.doDraw = function(g) {
+        throw "doDraw not implemented in SceneGraphNode"
+    }
+    SceneGraphNode.prototype.draw = function(g) {
+        graphics.save();
+        if (this.fillColor) {
+            g.fillStyle = this.fillColor;
+        }
+        if (this.strokeColor) {
+            g.strokeStyle = this.strokeColor;
+        }
+        this.doDraw(g);
+        graphics.restore();
+    }
+    SceneGraphNode.prototype.setFillColor = function(color) {
+        this.fillColor = color;
+        return this;
+    }
+    SceneGraphNode.prototype.setStrokeColor = function(color) {
+        this.strokeColor = color;
+        return this;
+    }
+    SceneGraphNode.prototype.setColor = function(color) {
+        this.fillColor = color;
+        this.strokeColor = color;
+        return this;
+    }
+    
+    /**
+     * Defines a subclass, CompoundObject, of SceneGraphNode.
+     */
+    function CompoundObject() {
+        SceneGraphNode.call(this);
+        this.subobjects = [];
+    }
+    CompoundObject.prototype = new SceneGraphNode();
+    CompoundObject.prototype.add = function(node) {
+        this.subobjects.push(node);
+        return this;
+    }
+    CompoundObject.prototype.doDraw = function(g) {
+        for (var i = 0; i < this.subobjects.length; i++)
+            this.subobjects[i].draw(g);
+    }
+    
+    /**
+     * Defines a subclass, TransformedObject, of SceneGraphNode.
+     */
+    function TransformedObject(object) {
+        SceneGraphNode.call(this);
+        this.object = object;
+        this.rotationInDegrees = 0;
+        this.scaleX = 1;
+        this.scaleY = 1;
+        this.translateX = 0;
+        this.translateY = 0;
+    }
+    TransformedObject.prototype = new SceneGraphNode();
+    TransformedObject.prototype.setRotation = function(angle) {
+        this.rotationInDegrees = angle;
+        return this;
+    }
+    TransformedObject.prototype.setScale = function(sx, sy) {
+        this.scaleX = sx;
+        this.scaleY = sy;
+        return this;
+    }
+    TransformedObject.prototype.setTranslation = function(dx, dy) {
+        this.translateX = dx;
+        this.translateY = dy;
+        return this;
+    }
+    TransformedObject.prototype.doDraw = function(g) {
+        g.save();
+        if (this.translateX !== 0 || this.translateY !== 0) {
+            g.translate(this.translateX, this.translateY);
+        }
+        if (this.rotationInDegrees !== 0) {
+            g.rotate(this.rotationInDegrees / 180 * Math.PI);
+        }
+        if (this.scaleX !== 1 || this.scaleY !== 1) {
+            g.scale(this.scaleX, this.scaleY);
+        }
+        this.object.draw(g);
+        g.restore();
+    }
+    
+    // Podstawowe kształty.
+    
+    var line = new SceneGraphNode();  
+    line.doDraw = function(g) {
+        g.beginPath();
+        g.moveTo(-0.5,0);
+        g.lineTo(0.5,0);
+        g.stroke();
+    }
+    
+    var filledRect = new SceneGraphNode();
+    filledRect.doDraw = function(g) {
+        g.fillRect(-0.5,-0.5,1,1);
+    }
+    
+    var rect = new SceneGraphNode();
+    rect.doDraw = function(g) {
+        g.strokeRect(-0.5,-0.5,1,1);
+    }
+    
+    var filledCircle = new SceneGraphNode();
+    filledCircle.doDraw = function(g) {
+        g.beginPath();
+        g.arc(0,0,0.5,0,2*Math.PI);
+        g.fill();
+    }
+    
+    var circle = new SceneGraphNode();
+    circle.doDraw = function(g) {
+        g.beginPath();
+        g.arc(0,0,0.5,0,2*Math.PI);
+        g.stroke();
+    }
+    
+    var filledTriangle = new SceneGraphNode();
+    filledTriangle.doDraw = function(g) {
+        g.beginPath();
+        g.moveTo(-0.5,0);
+        g.lineTo(0.5,0);
+        g.lineTo(0,1);
+        g.closePath();
+        g.fill();
+    }   
+    
+    // ------------------------------- graphics support functions --------------------------
+    
+    function draw() {
+        graphics.save();
+        graphics.fillStyle = BACKGROUND;
+        graphics.fillRect(0,0,canvas.width,canvas.height);
+        graphics.fillStyle = "black";
+        applyLimits(graphics,X_LEFT,X_RIGHT,Y_TOP,Y_BOTTOM,false);
+        graphics.lineWidth = pixelSize;
+        world.draw(graphics);
+        graphics.restore();
+    }
+    
+    function applyLimits(g, xleft, xright, ytop, ybottom, preserveAspect) {
+       var width = canvas.width;
+       var height = canvas.height;
+       if (preserveAspect) {
+          var displayAspect = Math.abs(height / width);
+          var requestedAspect = Math.abs((ybottom-ytop) / (xright-xleft));
+          var excess;
+          if (displayAspect > requestedAspect) {
+             excess = (ybottom-ytop) * (displayAspect/requestedAspect - 1);
+             ybottom += excess/2;
+             ytop -= excess/2;
+          }
+          else if (displayAspect < requestedAspect) {
+             excess = (xright-xleft) * (requestedAspect/displayAspect - 1);
+             xright += excess/2;
+             xleft -= excess/2;
+          }
+       }
+       var pixelWidth = Math.abs((xright - xleft) / width);
+       var pixelHeight = Math.abs((ybottom - ytop) / height);
+       pixelSize = Math.min(pixelWidth,pixelHeight);
+       g.scale(width / (xright-xleft), height / (ybottom-ytop));
+       g.translate(-xleft, -ytop);
+    }
+    
+    //------------------ Animation framework ------------------------------
+    
+    var running = false;
+    
+    function frame() {
+        if (running) {
+            updateFrame();
+            draw();
+            requestAnimationFrame(frame);
+        }
+    }
+    
+    function doAnimationCheckbox() { 
+        var shouldRun = document.getElementById("animateCheck").checked;
+        if (shouldRun != running) {
+            running = shouldRun;
+            if (running)
+                requestAnimationFrame(frame);
+        }
+    }
+    
+    //----------------------- initialization -------------------------------
+    
+    function init() {
+        canvas = document.getElementById("thecanvas");
+        if (!canvas.getContext) {
+            document.getElementById("message").innerHTML = "ERROR: Canvas not supported";
+            return;
+        }
+        graphics = canvas.getContext("2d");
+        document.getElementById("animateCheck").checked = false; 
+        document.getElementById("animateCheck").onchange = doAnimationCheckbox; 
+        createWorld();
+        draw();
+    }
+
+</script>
+
+</head>
+
+<body onload="init()" style="background-color:#EEEEEE">
+
+<h3>Scene Graph 2D</h3>
+
+<noscript>
+   <p><b style="color:red">Error: This page requires JavaScript, but it is not available.</b></p>
+</noscript>
+
+<p id="message"><label><input type="checkbox" id="animateCheck"><b>Run the Animation</b></label></p>
+
+<div style="float:left; border: 2px solid black">
+<canvas id="thecanvas" width="800" height="600" style="display:block"></canvas>
+</div>
+
+</body>
+</html>
