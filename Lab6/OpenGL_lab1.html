@@ -1,0 +1,149 @@
+
+<!DOCTYPE html> <html> <head> <meta charset="UTF-8"> <title>Obiekty OpenGL w JavaScript</title> <script src="glsim.js"></script> <!-- ładowanie biblioteki symulującej OpenGL 1.1 --> <script> // Globalne zmienne rotacji oraz wybór obiektu 
+let rotateX = 15; let rotateY = -15; let rotateZ = 0; let objectNumber = 1; // domyślnie rysujemy obiekt 1 (spiralę)
+    javascript
+    Копировать
+    Редактировать
+      // Funkcja obsługi klawiatury – dodatkowo reaguje na klawisze numeryczne '1' i '2'
+      function doKeyDown(evt) {
+        let key = evt.keyCode;
+        if ( key == 49 ) { // klawisz '1'
+          objectNumber = 1;
+        }
+        else if ( key == 50 ) { // klawisz '2'
+          objectNumber = 2;
+        }
+        else if ( key == 37 ) // lewo
+           rotateY -= 15;
+        else if ( key == 39 ) // prawo
+           rotateY += 15;
+        else if ( key == 40) // dół
+           rotateX += 15;
+        else if ( key == 38 ) // góra
+           rotateX -= 15;
+        else if ( key == 33 ) // Page Up
+           rotateZ += 15;
+        else if ( key == 34 ) // Page Down
+           rotateZ -= 15;
+        else if ( key == 36 )  // Home
+           rotateX = rotateY = rotateZ = 0;
+        
+        // Jeśli naciskamy strzałki lub PageUp/Down/Home, zapobiegamy domyślnej akcji
+        if ( (key >= 34 && key <= 40) )
+          evt.preventDefault();
+        display();
+      }
+    
+      // Funkcja rysująca spiralę – obiekt 1
+      function drawSpiral() {
+        // Ustawiamy kolor – przykładowo zielony
+        glColor3f(0, 1, 0);
+        // Rozpoczynamy rysowanie jako pasek linii
+        glBegin(GL_LINE_STRIP);
+        // Liczba obrotów – 14 pełnych obrotów (kąt 0 do 14*2PI)
+        let turns = 14;
+        // Określamy liczbę punktów; im więcej, tym gładsza spirala
+        let numPoints = turns * 100;
+        // Parametr theta od 0 do turns*2PI
+        for (let i = 0; i <= numPoints; i++) {
+          let theta = i * turns * 2 * Math.PI / numPoints;
+          // Promień rośnie liniowo wraz z theta; dobieramy stałą skalującą
+          let radius = 0.05 + 0.005 * theta;
+          // Używamy parametrów dla płaszczyzny XY – spirala w poziomie, z niewielką zmianą w Z (opcjonalnie można też obracać)
+          let x = radius * Math.cos(theta);
+          let y = radius * Math.sin(theta);
+          let z = 0.05 * theta; // dodajemy zmianę w osi Z dla efektu trójwymiarowości
+          glVertex3f(x, y, z);
+        }
+        glEnd();
+      }
+    
+      // Funkcja pomocnicza – rysuje pojedynczy trójkąt
+      function drawTriangle() {
+        glBegin(GL_TRIANGLES);
+          glVertex3f(0, 0, 0);
+          glVertex3f(1, 0, 0);
+          glVertex3f(0.5, 1, 0);
+        glEnd();
+      }
+    
+      // Funkcja rysująca piramidę – obiekt 2
+      function drawPyramid() {
+        // Rysujemy podstawę jako wachlarz trójkątów (GL_TRIANGLE_FAN)
+        glColor3f(0, 0, 1); // przykładowy kolor – niebieski
+        glBegin(GL_TRIANGLE_FAN);
+          // Środek podstawy
+          glVertex3f(0, 0, 0);
+          let sides = 14; // 14-wierzchołkowy wielokąt
+          let angleStep = 2 * Math.PI / sides;
+          // Wierzchołki okręgu
+          for (let i = 0; i <= sides; i++) {
+            let angle = i * angleStep;
+            let x = Math.cos(angle);
+            let y = Math.sin(angle);
+            glVertex3f(x, y, 0);
+          }
+        glEnd();
+    
+        // Rysujemy boki piramidy – każdy bok to trójkąt łączący krawędź podstawy z wierzchołkiem piramidy
+        glColor3f(1, 0.5, 0); // przykładowy kolor boczny – np. pomarańczowy
+        // Ustalamy wierzchołek piramidy (apex)
+        let apex = [0, 0, 1.5];
+        // Dla każdego trójkąta (bok piramidy) wykorzystujemy hierarchiczne przekształcenia
+        for (let i = 0; i < sides; i++) {
+          glPushMatrix();
+            // Obracamy o odpowiedni kąt, aby ustawić pierwszy wierzchołek krawędzi
+            glRotatef(i * angleStep * 180/Math.PI, 0, 0, 1);
+            // Rysujemy trójkąt: dwa punkty na krawędzi podstawy i apex
+            glBegin(GL_TRIANGLES);
+              // Pierwszy punkt – punkt na okręgu o promieniu 1 (na osi x)
+              glVertex3f(1, 0, 0);
+              // Drugi punkt – kolejny punkt na okręgu
+              let nextAngle = angleStep;
+              glVertex3f(Math.cos(nextAngle), Math.sin(nextAngle), 0);
+              // Wierzchołek piramidy
+              glVertex3f(apex[0], apex[1], apex[2]);
+            glEnd();
+          glPopMatrix();
+        }
+      }
+    
+      // Funkcja display() – decyduje, który obiekt narysować
+      function display() {
+        glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+        glLoadIdentity();
+        // Ustawienie globalnych rotacji
+        glRotatef(rotateZ,0,0,1);
+        glRotatef(rotateY,0,1,0);
+        glRotatef(rotateX,1,0,0);
+        // Wybór obiektu na podstawie wartości globalnej objectNumber
+        if (objectNumber === 1)
+          drawSpiral();
+        else if (objectNumber === 2)
+          drawPyramid();
+      }
+    
+      function initGL() {
+        glMatrixMode(GL_PROJECTION);
+        glOrtho(-3, 3, -3, 3, -3, 3);
+        glMatrixMode(GL_MODELVIEW);
+        glEnable(GL_DEPTH_TEST);
+        glClearColor(0, 0, 0, 1);
+      }
+    
+      function init() {
+        try {
+          glsimUse("glcanvas");  // ustawiamy kontekst OpenGL dla elementu canvas o 
+          id="glcanvas"
+        }
+        catch (e) {
+          document.getElementById("canvas-holder").innerHTML =
+             "Przykro nam, wystąpił błąd:<br>" + e;
+          return;
+        }
+        document.onkeydown = doKeyDown;
+        initGL();
+        display();
+      }
+    </script>
+    </head> <body onload="init()"> <h3>Obiekty OpenGL – Spiral i Piramida</h3> <p>(Wciśnij klawisz 1 lub 2, aby wybrać odpowiedni obiekt. Obracaj za pomocą strzałek, PageUp, PageDown oraz Home.)</p> <noscript> <p><b>Przykro nam, ta strona wymaga obsługi JavaScript!</b></p> </noscript> <div id="canvas-holder"> <canvas id="glcanvas" width="500" height="500"></canvas> </div> </body> </html>
